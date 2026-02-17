@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 from ccsds_mcp.ingest import IngestStats, run_ingest
+from ccsds_mcp.search import format_hits, search_pages
 
 LOGGER = logging.getLogger("ccsds_mcp")
 
@@ -23,7 +24,7 @@ def configure_logging() -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ccsds-mcp",
-        description="Ingestion tools for CCSDS PDF text extraction.",
+        description="Ingestion and search tools for CCSDS PDF text extraction.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -33,6 +34,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ingest_parser.add_argument("pdf_dir", help="Directory to scan recursively for PDFs.")
     ingest_parser.add_argument("sqlite_path", help="Destination SQLite database path.")
+
+    search_parser = subparsers.add_parser(
+        "search",
+        help="Search ingested pages with BM25 ranking.",
+    )
+    search_parser.add_argument("sqlite_path", help="Source SQLite database path.")
+    search_parser.add_argument("query", help="Search query.")
+    search_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=5,
+        help="Maximum number of ranked hits to print (default: 5).",
+    )
 
     return parser
 
@@ -55,6 +69,17 @@ def handle_ingest(args: argparse.Namespace) -> int:
     return 1 if stats.failed > 0 else 0
 
 
+def handle_search(args: argparse.Namespace) -> int:
+    hits = search_pages(
+        sqlite_path=Path(args.sqlite_path),
+        query=args.query,
+        top_k=args.top_k,
+    )
+    for line in format_hits(hits):
+        print(line)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     configure_logging()
     parser = build_parser()
@@ -63,6 +88,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "ingest":
             return handle_ingest(args)
+        if args.command == "search":
+            return handle_search(args)
     except ValueError as exc:
         LOGGER.error("%s", exc)
         return 1
