@@ -7,7 +7,9 @@ authors = [
     { name = "David Mayo", email = "dcmayo@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "requests>=2.32.5",
+]
 
 [project.scripts]
 ccsds-mcp = "ccsds_mcp:main"
