@@ -1,2 +1,7 @@
+from __future__ import annotations
+
+from ccsds_mcp.cli import main as cli_main
+
+
 def main() -> None:
-    print("Hello from ccsds-mcp!")
+    raise SystemExit(cli_main())
